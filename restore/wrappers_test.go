@@ -249,20 +249,20 @@ withstatistics: false
 				ClusterOutputs: make([]*cluster.RemoteOutput, 2),
 			}
 			// set up fake command results
-			apiResponse := make(map[int]string, 3)
-			apiResponse[-1] = utils.RequiredPluginVersion // this is a successful result fpr API version
-			apiResponse[0] = utils.RequiredPluginVersion
-			apiResponse[1] = utils.RequiredPluginVersion
+			apiResponse := make([]cluster.ShellCommand, 3)
+			apiResponse[0].Stdout = utils.RequiredPluginVersion // this is a successful result fpr API version
+			apiResponse[1].Stdout = utils.RequiredPluginVersion
+			apiResponse[2].Stdout = utils.RequiredPluginVersion
 			executor.ClusterOutputs[0] = &cluster.RemoteOutput{
-				Stdouts: apiResponse,
+				Commands: apiResponse,
 			}
 
-			nativeResponse := make(map[int]string, 3)
-			nativeResponse[-1] = "myPlugin version 1.2.3" // this is a successful result for --version
-			nativeResponse[0] = "myPlugin version 1.2.3"
-			nativeResponse[1] = "myPlugin version 1.2.3"
+			nativeResponse := make([]cluster.ShellCommand, 3)
+			nativeResponse[0].Stdout = "myPlugin version 1.2.3" // this is a successful result for --version
+			nativeResponse[1].Stdout = "myPlugin version 1.2.3"
+			nativeResponse[2].Stdout = "myPlugin version 1.2.3"
 			executor.ClusterOutputs[1] = &cluster.RemoteOutput{
-				Stdouts: nativeResponse,
+				Commands: nativeResponse,
 			}
 
 			// write history file using test cluster directories

@@ -53,26 +53,29 @@ var _ = Describe("agent remote", func() {
 			Expect(testExecutor.NumExecutions).To(Equal(1))
 			cc := testExecutor.ClusterCommands[0]
 			Expect(len(cc)).To(Equal(2))
-			Expect(cc[0][2]).To(MatchRegexp("scp .*/gpbackup-oids.* localhost:/data/gpseg0/gpbackup_0_11112233445566_oid_.*"))
-			Expect(cc[1][2]).To(MatchRegexp("scp .*/gpbackup-oids.* remotehost1:/data/gpseg1/gpbackup_1_11112233445566_oid_.*"))
+			Expect(cc[0].CommandString).To(MatchRegexp(
+				"scp .*/gpbackup-oids.* localhost:/data/gpseg0/gpbackup_0_11112233445566_oid_.*"))
+			Expect(cc[1].CommandString).To(MatchRegexp(
+				"scp .*/gpbackup-oids.* remotehost1:/data/gpseg1/gpbackup_1_11112233445566_oid_.*"))
 		})
 		It("panics if any scp commands fail and outputs correct err messages", func() {
 			testExecutor.ErrorOnExecNum = 1
 			remoteOutput.NumErrors = 1
-			remoteOutput.Scope = cluster.ON_MASTER_TO_SEGMENTS
-			remoteOutput.Errors = make(map[int]error, 1)
-			remoteOutput.Errors[1] = errors.New("test error 1")
-			remoteOutput.Stderrs = make(map[int]string, 1)
-			remoteOutput.Stderrs[1] = "stderr content 1"
-			remoteOutput.CmdStrs = make(map[int]string, 1)
-			remoteOutput.CmdStrs[1] = "scp fake_master fake_host"
+			remoteOutput.Scope = cluster.ON_HOSTS | cluster.INCLUDE_MASTER
+			remoteOutput.Commands = make([]cluster.ShellCommand, 1)
+			remoteOutput.Commands[1].Error = errors.New("test error 1")
+			remoteOutput.Commands[1].Stderr = "stderr content 1"
+			remoteOutput.Commands[1].CommandString = "scp fake_master fake_host"
 
 			Expect(func() { utils.WriteOidListToSegments(oidList, testCluster, fpInfo) }).To(Panic())
 
 			Expect(testExecutor.NumExecutions).To(Equal(1))
-			Expect(string(logfile.Contents())).To(ContainSubstring(`[CRITICAL]:-Failed to scp oid file on master for 1 segment. See gbytes.Buffer for a complete list of errors.`))
-			Expect(string(logfile.Contents())).To(ContainSubstring(`[DEBUG]:-Failed to run scp on master for segment 1 on host remotehost1 with error test error 1: stderr content 1`))
-			Expect(string(logfile.Contents())).To(ContainSubstring(`[DEBUG]:-Command was: scp fake_master fake_host`))
+			Expect(string(logfile.Contents())).To(ContainSubstring(
+				`[CRITICAL]:-Failed to scp oid file on master for 1 segment. See gbytes.Buffer for a complete list of errors.`))
+			Expect(string(logfile.Contents())).To(ContainSubstring(
+				`[DEBUG]:-Failed to run scp on master for segment 1 on host remotehost1 with error test error 1: stderr content 1`))
+			Expect(string(logfile.Contents())).To(ContainSubstring(
+				`[DEBUG]:-Command was: scp fake_master fake_host`))
 		})
 	})
 	Describe("WriteOidsToFile()", func() {
@@ -123,10 +126,11 @@ var _ = Describe("agent remote", func() {
 	})
 	Describe("StartGpbackupHelpers()", func() {
 		It("Correctly propagates --on-error-continue flag to gpbackup_helper", func() {
-			utils.StartGpbackupHelpers(testCluster, fpInfo, "operation", "/tmp/pluginConfigFile.yml", " compressStr", true)
+			utils.StartGpbackupHelpers(testCluster, fpInfo, "operation",
+				"/tmp/pluginConfigFile.yml", " compressStr", true)
 
 			cc := testExecutor.ClusterCommands[0]
-			Expect(cc[0][4]).To(ContainSubstring(" --on-error-continue"))
+			Expect(cc[0].CommandString).To(ContainSubstring(" --on-error-continue"))
 		})
 	})
 	Describe("CheckAgentErrorsOnSegments", func() {
@@ -137,11 +141,11 @@ var _ = Describe("agent remote", func() {
 			cc := testExecutor.ClusterCommands[0]
 			errorFile0 := fmt.Sprintf(`/data/gpseg0/gpbackup_0_11112233445566_pipe_%d_error`, fpInfo.PID)
 			expectedCmd0 := fmt.Sprintf(`if [[ -f %[1]s ]]; then echo 'error'; fi; rm -f %[1]s`, errorFile0)
-			Expect(cc[0][4]).To(Equal(expectedCmd0))
+			Expect(cc[0].CommandString).To(Equal(expectedCmd0))
 
 			errorFile1 := fmt.Sprintf(`/data/gpseg1/gpbackup_1_11112233445566_pipe_%d_error`, fpInfo.PID)
 			expectedCmd1 := fmt.Sprintf(`if [[ -f %[1]s ]]; then echo 'error'; fi; rm -f %[1]s`, errorFile1)
-			Expect(cc[1][4]).To(Equal(expectedCmd1))
+			Expect(cc[1].CommandString).To(Equal(expectedCmd1))
 		})
 
 	})

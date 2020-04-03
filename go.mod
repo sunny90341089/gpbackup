@@ -6,12 +6,12 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.4.1
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/blang/vfs v1.0.0
-	github.com/greenplum-db/gp-common-go-libs v0.0.0-20200220000734-974a164cfd33
+	github.com/greenplum-db/gp-common-go-libs v1.0.4
 	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/lib/pq v1.3.0
 	github.com/mattn/go-runewidth v0.0.8 // indirect
 	github.com/nightlyone/lockfile v0.0.0-20200124072040-edb130adc195
-	github.com/onsi/ginkgo v1.11.0
+	github.com/onsi/ginkgo v1.12.0
 	github.com/onsi/gomega v1.9.0
 	github.com/pkg/errors v0.9.1
 	github.com/sergi/go-diff v1.1.0

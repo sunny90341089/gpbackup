@@ -66,9 +66,11 @@ func SetDefaultSegmentConfiguration() *cluster.Cluster {
 }
 
 func SetupTestFilespace(connectionPool *dbconn.DBConn, testCluster *cluster.Cluster) {
-	remoteOutput := testCluster.GenerateAndExecuteCommand("Creating filespace test directory", func(contentID int) string {
+	remoteOutput := testCluster.GenerateAndExecuteCommand("Creating filespace test directory",
+		cluster.ON_HOSTS | cluster.INCLUDE_MASTER,
+		func(contentID int) string {
 		return fmt.Sprintf("mkdir -p /tmp/test_dir")
-	}, cluster.ON_HOSTS_AND_MASTER)
+	})
 	if remoteOutput.NumErrors != 0 {
 		Fail("Could not create filespace test directory on 1 or more hosts")
 	}

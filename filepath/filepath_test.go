@@ -31,8 +31,8 @@ var _ = Describe("filepath tests", func() {
 	var c *cluster.Cluster
 	BeforeEach(func() {
 		c = &cluster.Cluster{
-			Segments: map[int]cluster.SegConfig{
-				-1: {DataDir: masterDir},
+			Segments: []cluster.SegConfig{
+				{DataDir: masterDir, ContentID: -1},
 			},
 		}
 	})
@@ -62,63 +62,81 @@ var _ = Describe("filepath tests", func() {
 	Describe("GetTableBackupFilePathForCopyCommand()", func() {
 		It("returns table file path for copy command", func() {
 			fpInfo := NewFilePathInfo(c, "", "20170101010101", "gpseg")
-			Expect(fpInfo.GetTableBackupFilePathForCopyCommand(1234, "", false)).To(Equal("<SEG_DATA_DIR>/backups/20170101/20170101010101/gpbackup_<SEGID>_20170101010101_1234"))
+			expected := "<SEG_DATA_DIR>/backups/20170101/20170101010101/gpbackup_<SEGID>_20170101010101_1234"
+			Expect(fpInfo.GetTableBackupFilePathForCopyCommand(1234, "", false)).To(Equal(expected))
 		})
 		It("returns table file path for copy command based on user specified path", func() {
 			fpInfo := NewFilePathInfo(c, "/foo/bar", "20170101010101", "gpseg")
-			Expect(fpInfo.GetTableBackupFilePathForCopyCommand(1234, "", false)).To(Equal("/foo/bar/gpseg<SEGID>/backups/20170101/20170101010101/gpbackup_<SEGID>_20170101010101_1234"))
+			expected := "/foo/bar/gpseg<SEGID>/backups/20170101/20170101010101/gpbackup_<SEGID>_20170101010101_1234"
+			Expect(fpInfo.GetTableBackupFilePathForCopyCommand(1234, "", false)).To(Equal(expected))
 		})
 		It("returns table file path for copy command in single-file mode", func() {
 			fpInfo := NewFilePathInfo(c, "", "20170101010101", "gpseg")
-			Expect(fpInfo.GetTableBackupFilePathForCopyCommand(1234, "", true)).To(Equal("<SEG_DATA_DIR>/backups/20170101/20170101010101/gpbackup_<SEGID>_20170101010101"))
+			expected := "<SEG_DATA_DIR>/backups/20170101/20170101010101/gpbackup_<SEGID>_20170101010101"
+			Expect(fpInfo.GetTableBackupFilePathForCopyCommand(1234, "", true)).To(Equal(expected))
 		})
 		It("returns table file path for copy command based on user specified path in single-file mode", func() {
 			fpInfo := NewFilePathInfo(c, "/foo/bar", "20170101010101", "gpseg")
-			Expect(fpInfo.GetTableBackupFilePathForCopyCommand(1234, "", true)).To(Equal("/foo/bar/gpseg<SEGID>/backups/20170101/20170101010101/gpbackup_<SEGID>_20170101010101"))
+			expected := "/foo/bar/gpseg<SEGID>/backups/20170101/20170101010101/gpbackup_<SEGID>_20170101010101"
+			Expect(fpInfo.GetTableBackupFilePathForCopyCommand(1234, "", true)).To(Equal(expected))
 		})
 		It("returns table file path for copy command with extension", func() {
 			fpInfo := NewFilePathInfo(c, "", "20170101010101", "gpseg")
-			Expect(fpInfo.GetTableBackupFilePathForCopyCommand(1234, ".gzip", false)).To(Equal("<SEG_DATA_DIR>/backups/20170101/20170101010101/gpbackup_<SEGID>_20170101010101_1234.gzip"))
+			expected := "<SEG_DATA_DIR>/backups/20170101/20170101010101/gpbackup_<SEGID>_20170101010101_1234.gzip"
+			Expect(fpInfo.GetTableBackupFilePathForCopyCommand(1234, ".gzip", false)).To(Equal(expected))
 		})
 		It("returns table file path for copy command based on user specified path with extension", func() {
 			fpInfo := NewFilePathInfo(c, "/foo/bar", "20170101010101", "gpseg")
-			Expect(fpInfo.GetTableBackupFilePathForCopyCommand(1234, ".gzip", false)).To(Equal("/foo/bar/gpseg<SEGID>/backups/20170101/20170101010101/gpbackup_<SEGID>_20170101010101_1234.gzip"))
+			expected := "/foo/bar/gpseg<SEGID>/backups/20170101/20170101010101/gpbackup_<SEGID>_20170101010101_1234.gzip"
+			Expect(fpInfo.GetTableBackupFilePathForCopyCommand(1234, ".gzip", false)).To(Equal(expected))
 		})
 		It("returns table file path for copy command in single-file mode with extension", func() {
 			fpInfo := NewFilePathInfo(c, "", "20170101010101", "gpseg")
-			Expect(fpInfo.GetTableBackupFilePathForCopyCommand(1234, ".gzip", true)).To(Equal("<SEG_DATA_DIR>/backups/20170101/20170101010101/gpbackup_<SEGID>_20170101010101.gzip"))
+			expected := "<SEG_DATA_DIR>/backups/20170101/20170101010101/gpbackup_<SEGID>_20170101010101.gzip"
+			Expect(fpInfo.GetTableBackupFilePathForCopyCommand(1234, ".gzip", true)).To(Equal(expected))
 		})
 		It("returns table file path for copy command based on user specified path in single-file mode with extension", func() {
 			fpInfo := NewFilePathInfo(c, "/foo/bar", "20170101010101", "gpseg")
-			Expect(fpInfo.GetTableBackupFilePathForCopyCommand(1234, ".gzip", true)).To(Equal("/foo/bar/gpseg<SEGID>/backups/20170101/20170101010101/gpbackup_<SEGID>_20170101010101.gzip"))
+			expected := "/foo/bar/gpseg<SEGID>/backups/20170101/20170101010101/gpbackup_<SEGID>_20170101010101.gzip"
+			Expect(fpInfo.GetTableBackupFilePathForCopyCommand(1234, ".gzip", true)).To(Equal(expected))
 		})
 	})
 	Describe("GetReportFilePath", func() {
 		It("returns report file path", func() {
 			fpInfo := NewFilePathInfo(c, "", "20170101010101", "gpseg")
-			Expect(fpInfo.GetBackupReportFilePath()).To(Equal("/data/gpseg-1/backups/20170101/20170101010101/gpbackup_20170101010101_report"))
+			expected := "/data/gpseg-1/backups/20170101/20170101010101/gpbackup_20170101010101_report"
+			Expect(fpInfo.GetBackupReportFilePath()).To(Equal(expected))
 		})
 		It("returns report file path based on user specified path", func() {
 			fpInfo := NewFilePathInfo(c, "/foo/bar", "20170101010101", "gpseg")
-			Expect(fpInfo.GetBackupReportFilePath()).To(Equal("/foo/bar/gpseg-1/backups/20170101/20170101010101/gpbackup_20170101010101_report"))
+			expected := "/foo/bar/gpseg-1/backups/20170101/20170101010101/gpbackup_20170101010101_report"
+			Expect(fpInfo.GetBackupReportFilePath()).To(Equal(expected))
 		})
 	})
 	Describe("GetTableBackupFilePath", func() {
 		It("returns table file path", func() {
 			fpInfo := NewFilePathInfo(c, "", "20170101010101", "gpseg")
-			Expect(fpInfo.GetTableBackupFilePath(-1, 1234, "", false)).To(Equal("/data/gpseg-1/backups/20170101/20170101010101/gpbackup_-1_20170101010101_1234"))
+			expected := "/data/gpseg-1/backups/20170101/20170101010101/gpbackup_-1_20170101010101_1234"
+			filePath := fpInfo.GetTableBackupFilePath(-1, 1234, "", false)
+			Expect(filePath).To(Equal(expected))
 		})
 		It("returns table file path based on user specified path", func() {
 			fpInfo := NewFilePathInfo(c, "/foo/bar", "20170101010101", "gpseg")
-			Expect(fpInfo.GetTableBackupFilePath(-1, 1234, "", false)).To(Equal("/foo/bar/gpseg-1/backups/20170101/20170101010101/gpbackup_-1_20170101010101_1234"))
+			expected := "/foo/bar/gpseg-1/backups/20170101/20170101010101/gpbackup_-1_20170101010101_1234"
+			filePath := fpInfo.GetTableBackupFilePath(-1, 1234, "", false)
+			Expect(filePath).To(Equal(expected))
 		})
 		It("returns single data file path", func() {
 			fpInfo := NewFilePathInfo(c, "", "20170101010101", "gpseg")
-			Expect(fpInfo.GetTableBackupFilePath(-1, 1234, "", true)).To(Equal("/data/gpseg-1/backups/20170101/20170101010101/gpbackup_-1_20170101010101"))
+			expected := "/data/gpseg-1/backups/20170101/20170101010101/gpbackup_-1_20170101010101"
+			filePath := fpInfo.GetTableBackupFilePath(-1, 1234, "", true)
+			Expect(filePath).To(Equal(expected))
 		})
 		It("returns single data file path based on user specified path", func() {
 			fpInfo := NewFilePathInfo(c, "/foo/bar", "20170101010101", "gpseg")
-			Expect(fpInfo.GetTableBackupFilePath(-1, 1234, "", true)).To(Equal("/foo/bar/gpseg-1/backups/20170101/20170101010101/gpbackup_-1_20170101010101"))
+			expected := "/foo/bar/gpseg-1/backups/20170101/20170101010101/gpbackup_-1_20170101010101"
+			filePath := fpInfo.GetTableBackupFilePath(-1, 1234, "", true)
+			Expect(filePath).To(Equal(expected))
 		})
 	})
 	Describe("ParseSegPrefix", func() {

@@ -41,28 +41,28 @@ var _ = Describe("utils/plugin tests", func() {
 			ClusterOutputs: make([]*cluster.RemoteOutput, 2),
 		}
 		// set up fake command results
-		apiResponse := make(map[int]string, 3)
-		apiResponse[-1] = utils.RequiredPluginVersion // this is a successful result for API version
-		apiResponse[0] = utils.RequiredPluginVersion
-		apiResponse[1] = utils.RequiredPluginVersion
+		apiResponse := make([]cluster.ShellCommand, 3)
+		apiResponse[0].Stdout = utils.RequiredPluginVersion // this is a successful result for API version
+		apiResponse[1].Stdout = utils.RequiredPluginVersion
+		apiResponse[2].Stdout = utils.RequiredPluginVersion
 		executor.ClusterOutputs[0] = &cluster.RemoteOutput{
-			Stdouts: apiResponse,
+			Commands: apiResponse,
 		}
-		nativeResponse := make(map[int]string, 3)
-		nativeResponse[-1] = "myPlugin version 1.2.3" // this is a successful result for --version
-		nativeResponse[0] = "myPlugin version 1.2.3"
-		nativeResponse[1] = "myPlugin version 1.2.3"
+		nativeResponse := make([]cluster.ShellCommand, 3)
+		nativeResponse[0].Stdout = "myPlugin version 1.2.3" // this is a successful result for --version
+		nativeResponse[1].Stdout = "myPlugin version 1.2.3"
+		nativeResponse[2].Stdout = "myPlugin version 1.2.3"
 		executor.ClusterOutputs[1] = &cluster.RemoteOutput{
-			Stdouts: nativeResponse,
+			Commands: nativeResponse,
 		}
 
 		testCluster = &cluster.Cluster{
 			ContentIDs: []int{-1, 0, 1},
 			Executor:   &executor,
-			Segments: map[int]cluster.SegConfig{
-				-1: {DataDir: filepath.Join(tempDir, "seg-1"), Hostname: "master", Port: 100},
-				0:  {DataDir: filepath.Join(tempDir, "seg0"), Hostname: "segment1", Port: 101},
-				1:  {DataDir: filepath.Join(tempDir, "seg1"), Hostname: "segment2", Port: 102},
+			Segments: []cluster.SegConfig{
+				{DataDir: filepath.Join(tempDir, "seg-1"), Hostname: "master", Port: 100},
+				{DataDir: filepath.Join(tempDir, "seg0"), Hostname: "segment1", Port: 101},
+				{DataDir: filepath.Join(tempDir, "seg1"), Hostname: "segment2", Port: 102},
 			},
 		}
 	})
@@ -184,18 +184,18 @@ options:
 				// add one to whatever the current required version might be
 				version, _ := semver.Make(utils.RequiredPluginVersion)
 				greater, _ := semver.Make(strconv.Itoa(int(version.Major)+1) + ".0.0")
-				executor.ClusterOutputs[0].Stdouts[-1] = greater.String()
-				executor.ClusterOutputs[0].Stdouts[0] = greater.String()
-				executor.ClusterOutputs[0].Stdouts[1] = greater.String()
+				executor.ClusterOutputs[0].Commands[0].Stdout = greater.String()
+				executor.ClusterOutputs[0].Commands[1].Stdout = greater.String()
+				executor.ClusterOutputs[0].Commands[2].Stdout = greater.String()
 
 				_ = subject.CheckPluginExistsOnAllHosts(testCluster)
 			})
 		})
 		When("version is too low", func() {
 			It("panics with message", func() {
-				executor.ClusterOutputs[0].Stdouts[-1] = "0.2.0"
-				executor.ClusterOutputs[0].Stdouts[0] = "0.2.0"
-				executor.ClusterOutputs[0].Stdouts[1] = "0.2.0"
+				executor.ClusterOutputs[0].Commands[0].Stdout = "0.2.0"
+				executor.ClusterOutputs[0].Commands[1].Stdout = "0.2.0"
+				executor.ClusterOutputs[0].Commands[2].Stdout = "0.2.0"
 				defer testhelper.ShouldPanicWithMessage("Plugin API version incorrect")
 
 				_ = subject.CheckPluginExistsOnAllHosts(testCluster)
@@ -203,9 +203,9 @@ options:
 		})
 		When("version cannot be parsed", func() {
 			It("panics with message", func() {
-				executor.ClusterOutputs[0].Stdouts[-1] = "foo"
-				executor.ClusterOutputs[0].Stdouts[0] = "foo"
-				executor.ClusterOutputs[0].Stdouts[1] = "foo"
+				executor.ClusterOutputs[0].Commands[0].Stdout = "foo"
+				executor.ClusterOutputs[0].Commands[1].Stdout = "foo"
+				executor.ClusterOutputs[0].Commands[2].Stdout = "foo"
 				defer testhelper.ShouldPanicWithMessage("Unable to parse plugin API version")
 
 				_ = subject.CheckPluginExistsOnAllHosts(testCluster)
@@ -222,7 +222,7 @@ options:
 		})
 		When("version inconsistent", func() {
 			It("panics with message", func() {
-				executor.ClusterOutputs[0].Stdouts[-1] = "99.99.9999"
+				executor.ClusterOutputs[0].Commands[0].Stdout = "99.99.9999"
 				defer testhelper.ShouldPanicWithMessage("Plugin API version is inconsistent across segments")
 
 				_ = subject.CheckPluginExistsOnAllHosts(testCluster)
