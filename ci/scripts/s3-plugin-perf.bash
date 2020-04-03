@@ -9,7 +9,7 @@ ssh -t mdw "mkdir -p /tmp/s3 && \
     chmod 600 \${HOME}/.passwd-s3fs && \
     s3fs gpbackup-s3-plugin-test /tmp/s3 -o passwd_file=\${HOME}/.passwd-s3fs && \
     ln -s /tmp/s3 ~/tpch_data && \
-    ls -l ~/tpch_data/benchmark/tpch/lineitem/10"
+    ls -l ~/tpch_data/benchmark/tpch/lineitem/${SCALE_FACTOR}"
 
 cat << EOF > lineitem.ddl
 DROP TABLE IF EXISTS lineitem;
@@ -30,7 +30,8 @@ CREATE TABLE lineitem (
     l_shipinstruct   CHAR(25) NOT NULL,
     l_shipmode       CHAR(10) NOT NULL,
     l_comment        VARCHAR(44) NOT NULL
-);
+)
+DISTRIBUTED BY (l_orderkey);
 EOF
 
 cat << EOF > gpload.yml
@@ -44,7 +45,7 @@ GPLOAD:
    INPUT:
     - SOURCE:
          FILE:
-           - /home/gpadmin/tpch_data/benchmark/tpch/lineitem/10/lineitem.tbl
+           - /home/gpadmin/tpch_data/benchmark/tpch/lineitem/${SCALE_FACTOR}/lineitem.tbl
     - FORMAT: text
     - DELIMITER: '|'
     - HEADER: false
@@ -71,6 +72,8 @@ time gpload -f gpload.yml
 time psql -d tpchdb -c "CREATE TABLE lineitem_1 AS SELECT * FROM lineitem"
 time psql -d tpchdb -c "CREATE TABLE lineitem_2 AS SELECT * FROM lineitem"
 time psql -d tpchdb -c "CREATE TABLE lineitem_3 AS SELECT * FROM lineitem"
+time psql -d tpchdb -c "CREATE TABLE lineitem_4 AS SELECT * FROM lineitem"
+time psql -d tpchdb -c "CREATE TABLE lineitem_5 AS SELECT * FROM lineitem"
 
 log_file=/tmp/gpbackup.log
 time gpbackup --dbname tpchdb --plugin-config ~/s3_config.yaml | tee "\$log_file"

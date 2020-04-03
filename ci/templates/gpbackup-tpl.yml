@@ -374,7 +374,7 @@ resources:
   type: git
   icon: github-circle
   source:
-    branch: master
+    branch: {{gpbackup-s3-plugin-git-branch}}
     uri: https://github.com/greenplum-db/gpbackup-s3-plugin
 {% if "gpbackup-release" == pipeline_name %}
     tag_filter: 1.*
@@ -954,6 +954,7 @@ jobs:
       AWS_ACCESS_KEY_ID: {{bucket-access-key-id}}
       AWS_SECRET_ACCESS_KEY: {{bucket-secret-access-key}}
       BUCKET: {{gpbackup-s3-plugin-test-bucket}}
+      SCALE_FACTOR: 10
   on_success:
     <<: *ccp_destroy
   on_failure:
