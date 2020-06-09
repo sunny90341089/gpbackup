@@ -2,9 +2,7 @@ package helper
 
 import (
 	"bufio"
-	"bytes"
 	"compress/gzip"
-	"encoding/binary"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -92,7 +90,7 @@ func doRestoreAgent() error {
 		return err
 	}
 
-	reader, err := getRestoreDataReader(segmentTOC)
+	reader, err := getRestoreDataReader(segmentTOC, oidList)
 	if err != nil {
 		return err
 	}
@@ -177,7 +175,7 @@ func doRestoreAgent() error {
 	return lastError
 }
 
-func getRestoreDataReader(tocEntries *toc.SegmentTOC) (*RestoreReader, error) {
+func getRestoreDataReader(toc *toc.SegmentTOC, oidList []int) (*RestoreReader, error) {
 	var readHandle io.Reader
 	var seekHandle io.ReadSeeker
 	var isSubset bool
@@ -185,7 +183,7 @@ func getRestoreDataReader(tocEntries *toc.SegmentTOC) (*RestoreReader, error) {
 	restoreReader := new(RestoreReader)
 
 	if *pluginConfigFile != "" {
-		readHandle, isSubset, err = startRestorePluginCommand(tocEntries)
+		readHandle, isSubset, err = startRestorePluginCommand(toc, oidList)
 		if isSubset {
 			// Reader that operates on subset data
 			restoreReader.readerType = SUBSET
@@ -194,7 +192,7 @@ func getRestoreDataReader(tocEntries *toc.SegmentTOC) (*RestoreReader, error) {
 			restoreReader.readerType = NONSEEKABLE
 		}
 	} else {
-		if *isFilter && !strings.HasSuffix(*dataFile, ".gz") {
+		if *isFiltered && !strings.HasSuffix(*dataFile, ".gz") {
 			// Seekable reader if backup is not compressed and filters are set
 			seekHandle, err = os.Open(*dataFile)
 			restoreReader.readerType = SEEKABLE
@@ -240,25 +238,25 @@ func getRestorePipeWriter(currentPipe string) (*bufio.Writer, *os.File, error) {
 	return pipeWriter, fileHandle, nil
 }
 
-func startRestorePluginCommand(tocEntries *toc.SegmentTOC) (io.Reader, bool, error) {
+func startRestorePluginCommand(toc *toc.SegmentTOC, oidList []int) (io.Reader, bool, error) {
 	isSubset := false
 	pluginConfig, err := utils.ReadPluginConfig(*pluginConfigFile)
 	if err != nil {
 		return nil, false, err
 	}
 	cmdStr := ""
-	if pluginConfig.CanRestoreSubset() && *isFilter && !strings.HasSuffix(*dataFile, ".gz") {
+	if pluginConfig.CanRestoreSubset() && *isFiltered && !strings.HasSuffix(*dataFile, ".gz") {
 		offsetsFile, _ := ioutil.TempFile("/tmp", "gprestore_offsets_")
 		defer func() {
 			offsetsFile.Close()
-			os.Remove(offsetsFile.Name())
 		}()
-		buf := new(bytes.Buffer)
-		for _, entry := range tocEntries.DataEntries {
-			_ = binary.Write(buf, binary.LittleEndian, entry.StartByte)
-			_ = binary.Write(buf, binary.LittleEndian, entry.EndByte)
+		w := bufio.NewWriter(offsetsFile)
+		w.WriteString(fmt.Sprintf("%v", len(oidList)))
+
+		for _, oid := range oidList {
+			w.WriteString(fmt.Sprintf(" %v %v", toc.DataEntries[uint(oid)].StartByte, toc.DataEntries[uint(oid)].EndByte))
 		}
-		offsetsFile.Write(buf.Bytes())
+		w.Flush()
 		cmdStr = fmt.Sprintf("%s restore_data_subset %s %s %s", pluginConfig.ExecutablePath, pluginConfig.ConfigPath, *dataFile, offsetsFile.Name())
 		isSubset = true
 	} else {
