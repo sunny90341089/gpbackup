@@ -31,15 +31,20 @@ test_preparedata() {
     echo "Preparing test data for plugin scale test"
     psql -X -d postgres -qc "DROP DATABASE IF EXISTS $test_db" 2>/dev/null
     createdb $test_db
-    psql -X -d $test_db -qc "CREATE TABLE test1(i int) DISTRIBUTED RANDOMLY; INSERT INTO test1 select generate_series(1,20000000)"
-    psql -X -d $test_db -qc "CREATE TABLE test2(i int) DISTRIBUTED RANDOMLY; INSERT INTO test2 VALUES(3333)"
-    psql -X -d $test_db -qc "CREATE TABLE test3(i int) DISTRIBUTED RANDOMLY; INSERT INTO test3 select generate_series(1,20000000)"
-    psql -X -d $test_db -qc "CREATE TABLE test4(i int) DISTRIBUTED RANDOMLY; INSERT INTO test4 VALUES(9999)"
+    psql -X -d $test_db -qc "CREATE TABLE test1(i int) DISTRIBUTED RANDOMLY; INSERT INTO test1 select generate_series(1,100000000)"
+    psql -X -d $test_db -qc "CREATE TABLE test2(i int) DISTRIBUTED RANDOMLY; INSERT INTO test2 select generate_series(1,100000000)"
+    psql -X -d $test_db -qc "CREATE TABLE test3(i int) DISTRIBUTED RANDOMLY; INSERT INTO test3 select generate_series(1,100000000)"
+    psql -X -d $test_db -qc "CREATE TABLE test4(i int) DISTRIBUTED RANDOMLY; INSERT INTO test4 select generate_series(1,100000000)"
+    psql -X -d $test_db -qc "CREATE TABLE test5(i int) DISTRIBUTED RANDOMLY; INSERT INTO test5 VALUES(3333)"
+    psql -X -d $test_db -qc "CREATE TABLE test6(i int) DISTRIBUTED RANDOMLY; INSERT INTO test6 select generate_series(1,100000000)"
+    psql -X -d $test_db -qc "CREATE TABLE test7(i int) DISTRIBUTED RANDOMLY; INSERT INTO test7 select generate_series(1,100000000)"
+    psql -X -d $test_db -qc "CREATE TABLE test8(i int) DISTRIBUTED RANDOMLY; INSERT INTO test8 select generate_series(1,100000000)"
+    psql -X -d $test_db -qc "CREATE TABLE test9(i int) DISTRIBUTED RANDOMLY; INSERT INTO test9 VALUES(9999)"
 }
 
 test_backup_and_restore_with_plugin() {
     config=$1
-    flags=$2
+    backup_flags=$2
     restore_filter=$3
     log_file="$logdir/plugin_test_log_file"
     TIMEFORMAT=%R
@@ -51,8 +56,9 @@ test_backup_and_restore_with_plugin() {
     fi
     echo "gpbackup_ddboost_plugin: 66706c6c6e677a6965796f68343365303133336f6c73366b316868326764" > $MASTER_DATA_DIRECTORY/.encrypt
 
-    echo "[RUNNING] gpbackup with test database (using ${flags})"
-    time gpbackup --dbname $test_db --plugin-config $config $flags &> $log_file
+    echo
+    echo "[RUNNING] gpbackup (flags: [${backup_flags}])"
+    time gpbackup --dbname $test_db --plugin-config $config $backup_flags &> $log_file
     if [ ! $? -eq 0 ]; then
         echo
         cat $log_file
@@ -63,9 +69,9 @@ test_backup_and_restore_with_plugin() {
     timestamp=`head -4 $log_file | grep "Backup Timestamp " | grep -Eo "[[:digit:]]{14}"`
 
     if [ "$restore_filter" == "restore-filter" ] ; then
-      flags_restore=" --include-table public.test2 --include-table public.test4"
+      flags_restore=" --include-table public.test9"
     fi
-    echo "[RUNNING] gprestore with test database (using ${flags}${flags_restore})"
+    echo "[RUNNING] gprestore (flags: [${flags_restore}])"
 
     time gprestore --timestamp $timestamp --plugin-config $config --create-db --redirect-db ${test_db}_restore $flags_restore &> $log_file
 
@@ -92,13 +98,15 @@ test_backup_and_restore_with_plugin() {
 test_preparedata
 test_backup_and_restore_with_plugin "$plugin_config"
 test_backup_and_restore_with_plugin "$plugin_config" "--single-data-file"
+test_backup_and_restore_with_plugin "$plugin_config" "" "restore-filter"
 test_backup_and_restore_with_plugin "$plugin_config" "--single-data-file" "restore-filter"
 test_backup_and_restore_with_plugin "$plugin_config" "--single-data-file --no-compression" "restore-filter"
 
-echo "Testing with plugin config with restore_subset disabled"
+echo
+echo "DISABLED restore_subset"
 plugin_config_temp=$(mktemp)
 cat $plugin_config > $plugin_config_temp
-echo "  restore_subset: \"false\"" >> $plugin_config_temp
+echo "  restore_subset: \"off\"" >> $plugin_config_temp
 test_backup_and_restore_with_plugin "$plugin_config_temp" "--single-data-file --no-compression" "restore-filter"
 
 # ----------------------------------------------

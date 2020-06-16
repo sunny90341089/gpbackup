@@ -206,40 +206,45 @@ cleanup_test_dir $testdir
 # ----------------------------------------------
 # Restore subset data functions
 # ----------------------------------------------
-echo "[RUNNING] backup_data of large data for subset restore"
-echo $data_large | $plugin backup_data $plugin_config $testdatalarge
+if [[ "$plugin" == *gpbackup_ddboost_plugin ]]; then
+  echo "[RUNNING] backup_data of large data for subset restore"
+  echo $data_large | $plugin backup_data $plugin_config $testdatalarge
 
-echo "1 3 10" > "$testdir/offsets"
-echo "[RUNNING] restore_data_subset"
-output=`$plugin restore_data_subset $plugin_config $testdata "$testdir/offsets"`
-data_subset=$(echo $data | cut -c4-10)
-if [ "$output" != "$data_subset" ]; then
-  echo "Failure in restore_data_subset of small data using plugin"
-  exit 1
-fi
-echo "[PASSED] restore_data_subset with small data"
+  echo "1 3 10" > "$testdir/offsets"
+  echo "[RUNNING] restore_data_subset"
+  echo $plugin restore_data_subset $plugin_config $testdata "$testdir/offsets"
+  output=`$plugin restore_data_subset $plugin_config $testdata "$testdir/offsets"`
+  echo "---------------"
+  data_subset=$(echo $data | cut -c4-10)
+  echo "---------------"
+  if [ "$output" != "$data_subset" ]; then
+    echo "Failure in restore_data_subset of small data using plugin"
+    exit 1
+  fi
+  echo "[PASSED] restore_data_subset with small data"
 
-echo "1 900000 900001" > "$testdir/offsets"
-echo "[RUNNING] restore_data_subset"
-output=`$plugin restore_data_subset $plugin_config $testdatalarge "$testdir/offsets"`
-data_part=$(echo $data_large | cut -c900001-900001)
-if [ "$output" != "$data_part" ]; then
-  echo "Failure restore_data_subset of one partition from large data $output $data_part"
-  exit 1
-fi
-echo "[PASSED] restore_data_subset of one partition from large data"
+  echo "1 900000 900001" > "$testdir/offsets"
+  echo "[RUNNING] restore_data_subset"
+  output=`$plugin restore_data_subset $plugin_config $testdatalarge "$testdir/offsets"`
+  data_part=$(echo $data_large | cut -c900001-900001)
+  if [ "$output" != "$data_part" ]; then
+    echo "Failure restore_data_subset of one partition from large data $output $data_part"
+    exit 1
+  fi
+  echo "[PASSED] restore_data_subset of one partition from large data"
 
-echo "2 0 700000 900000 900001" > "$testdir/offsets"
-echo "[RUNNING] restore_data_subset"
-output=`$plugin restore_data_subset $plugin_config $testdatalarge "$testdir/offsets"`
-data_part1=$(echo $data_large | cut -c1-700000)
-data_part2=$(echo $data_large | cut -c900001-900001)
-if [ "$output" != "$data_part1$data_part2" ]; then
-  echo "Failure restore_data_subset of two partitions from large data"
-  exit 1
+  echo "2 0 700000 900000 900001" > "$testdir/offsets"
+  echo "[RUNNING] restore_data_subset"
+  output=`$plugin restore_data_subset $plugin_config $testdatalarge "$testdir/offsets"`
+  data_part1=$(echo $data_large | cut -c1-700000)
+  data_part2=$(echo $data_large | cut -c900001-900001)
+  if [ "$output" != "$data_part1$data_part2" ]; then
+    echo "Failure restore_data_subset of two partitions from large data"
+    exit 1
+  fi
+  echo "[PASSED] restore_data_subset of two partitions from large data"
+  cleanup_test_dir $testdir
 fi
-echo "[PASSED] restore_data_subset of two partitions from large data"
-cleanup_test_dir $testdir
 
 # ----------------------------------------------
 # Delete backup directory function
